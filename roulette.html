@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>룰렛 이벤트</title>
+    <link rel="stylesheet" href="roulette.css">
+</head>
+<body>
+    <div class="roulette-container">
+        <div class="roulette-wrapper">
+            <!-- 화살표 (고정) -->
+            <div class="arrow">
+                <img src="assets/arrow.png" alt="화살표">
+            </div>
+
+            <!-- 룰렛 회전 영역 -->
+            <div class="roulette-wheel" id="rouletteWheel">
+                <!-- 뒷판 -->
+                <div class="wheel-back">
+                    <img src="assets/back.png" alt="배경">
+                </div>
+
+                <!-- 앞판 (회전하는 부분) -->
+                <div class="wheel-front">
+                    <img src="assets/front.png" alt="룰렛">
+
+                    <!-- 각 영역에 텍스트 배치 -->
+                    <div class="prize-text prize-1">10% 할인</div>
+                    <div class="prize-text prize-2">꽝</div>
+                    <div class="prize-text prize-3">무료쿠폰</div>
+                    <div class="prize-text prize-4">20% 할인</div>
+                    <div class="prize-text prize-5">꽝</div>
+                    <div class="prize-text prize-6">5% 할인</div>
+                </div>
+
+                <!-- GO 버튼 -->
+                <div class="spin-button" id="spinButton">
+                    <img src="assets/button.png" alt="GO">
+                </div>
+            </div>
+        </div>
+
+        <!-- 결과 모달 -->
+        <div class="result-modal" id="resultModal">
+            <div class="modal-content">
+                <h2>축하합니다!</h2>
+                <p class="result-text" id="resultText"></p>
+                <button class="close-button" id="closeButton">확인</button>
+            </div>
+        </div>
+
+        <!-- 이미 참여한 경우 메시지 -->
+        <div class="already-played-message" id="alreadyPlayedMessage">
+            <p>이미 룰렛을 참여하셨습니다!</p>
+        </div>
+    </div>
+
+    <script src="roulette.js"></script>
+</body>
+</html>

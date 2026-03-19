@@ -1,0 +1,264 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.roulette-container {
+    position: relative;
+}
+
+.roulette-wrapper {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 화살표 (고정) */
+.arrow {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    width: 40px;
+    height: 40px;
+}
+
+.arrow img {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* 룰렛 휠 */
+.roulette-wheel {
+    position: relative;
+    width: 450px;
+    height: 450px;
+    transition: transform 4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.roulette-wheel.spinning {
+    transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+}
+
+/* 뒷판 */
+.wheel-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.wheel-back img {
+    width: 100%;
+    height: 100%;
+}
+
+/* 앞판 (회전) */
+.wheel-front {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+.wheel-front img {
+    width: 100%;
+    height: 100%;
+}
+
+/* 상품 텍스트 배치 */
+.prize-text {
+    position: absolute;
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    text-align: center;
+    white-space: nowrap;
+    transform-origin: center;
+    pointer-events: none;
+}
+
+/* 각 영역에 맞게 위치 조정 (60도씩 회전) */
+.prize-1 {
+    top: 18%;
+    left: 50%;
+    transform: translateX(-50%) rotate(0deg);
+}
+
+.prize-2 {
+    top: 32%;
+    right: 15%;
+    transform: rotate(60deg);
+}
+
+.prize-3 {
+    bottom: 32%;
+    right: 15%;
+    transform: rotate(120deg);
+}
+
+.prize-4 {
+    bottom: 18%;
+    left: 50%;
+    transform: translateX(-50%) rotate(180deg);
+}
+
+.prize-5 {
+    bottom: 32%;
+    left: 15%;
+    transform: rotate(240deg);
+}
+
+.prize-6 {
+    top: 32%;
+    left: 15%;
+    transform: rotate(300deg);
+}
+
+/* GO 버튼 */
+.spin-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    width: 120px;
+    height: 120px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.spin-button:hover {
+    transform: translate(-50%, -50%) scale(1.05);
+}
+
+.spin-button:active {
+    transform: translate(-50%, -50%) scale(0.95);
+}
+
+.spin-button.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.spin-button img {
+    width: 100%;
+    height: 100%;
+}
+
+/* 결과 모달 */
+.result-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+}
+
+.result-modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-content h2 {
+    font-size: 28px;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+
+.result-text {
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 30px;
+    font-weight: bold;
+}
+
+.close-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 40px;
+    font-size: 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.close-button:hover {
+    transform: scale(1.05);
+}
+
+.close-button:active {
+    transform: scale(0.95);
+}
+
+/* 이미 참여한 경우 메시지 */
+.already-played-message {
+    display: none;
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ff6b6b;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.already-played-message.show {
+    display: block;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(-50%) translateY(0);
+    }
+    25% {
+        transform: translateX(-50%) translateY(-10px);
+    }
+    75% {
+        transform: translateX(-50%) translateY(10px);
+    }
+}
