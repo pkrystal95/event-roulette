@@ -76,12 +76,8 @@ export async function POST(request: NextRequest) {
 
     // 낙첨자만 추가 참여 가능하도록 쿠키 설정
     if (!isWinner) {
-      // 참여 쿠키 초기화 (다시 룰렛 참여 가능)
-      response.cookies.set('event_participated', 'false', {
-        maxAge: 0, // 쿠키 삭제
-        httpOnly: false,
-        path: '/',
-      });
+      // 참여 쿠키 삭제 (다시 룰렛 참여 가능)
+      response.cookies.delete('event_participated');
 
       // 두 번째 결과 업데이트를 위해 전화번호 저장
       response.cookies.set('event_phone', phone, {
@@ -89,6 +85,8 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         path: '/',
       });
+
+      console.log('✅ 낙첨자 쿠키 삭제 완료 - 2차 참여 가능');
     } else {
       // 당첨자는 더 이상 참여 불가
       response.cookies.set('event_participated', 'true', {
@@ -96,6 +94,8 @@ export async function POST(request: NextRequest) {
         httpOnly: false,
         path: '/',
       });
+
+      console.log('✅ 당첨자 쿠키 설정 완료 - 추가 참여 불가');
     }
 
     return response;
