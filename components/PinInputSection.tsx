@@ -1,76 +1,41 @@
 'use client';
 
-import { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
+import { useState } from 'react';
 
 interface PinInputSectionProps {
   onSuccess: () => void;
 }
 
 export default function PinInputSection({ onSuccess }: PinInputSectionProps) {
-  const [pins, setPins] = useState(['', '', '', '']);
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleChange = (index: number, value: string) => {
-    // 마지막 입력된 문자만 가져오기 (붙여넣기나 자동완성 대응)
-    const lastChar = value.slice(-1);
+  // PIN 코드 입력 핸들러 (P + 6자리 숫자)
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.toUpperCase();
 
-    // 숫자만 입력 허용
-    if (lastChar && !/^\d$/.test(lastChar)) return;
-
-    const newPins = [...pins];
-    newPins[index] = lastChar;
-    setPins(newPins);
-
-    // 값이 입력되면 다음 입력란으로 포커스 이동
-    if (lastChar && index < 3) {
-      setTimeout(() => {
-        inputRefs.current[index + 1]?.focus();
-      }, 10);
+    // P로 시작하지 않으면 P 추가
+    if (value && !value.startsWith('P')) {
+      value = 'P' + value;
     }
 
-    // 4자리 모두 입력되면 자동 제출
-    if (index === 3 && lastChar) {
-      const fullPin = newPins.join('');
-      if (fullPin.length === 4) {
-        setTimeout(() => {
-          handleSubmit(fullPin);
-        }, 100);
-      }
-    }
+    // P 제거 후 숫자만 추출
+    const numbers = value.slice(1).replace(/[^\d]/g, '');
+
+    // P + 최대 6자리 숫자
+    const formatted = 'P' + numbers.slice(0, 6);
+
+    setPin(formatted === 'P' ? '' : formatted);
   };
 
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
-    // 백스페이스 키 처리
-    if (e.key === 'Backspace' && !pins[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').slice(0, 4);
 
-    if (/^\d+$/.test(pastedData)) {
-      const newPins = pastedData.split('').concat(['', '', '', '']).slice(0, 4);
-      setPins(newPins);
-
-      // 마지막 입력란으로 포커스 이동
-      const lastIndex = Math.min(pastedData.length, 3);
-      inputRefs.current[lastIndex]?.focus();
-
-      // 4자리 모두 입력되면 자동 제출
-      if (pastedData.length === 4) {
-        handleSubmit(pastedData);
-      }
+    if (pin.length !== 7) {
+      setError('PIN 코드는 P + 6자리 숫자입니다. (예: P123456)');
+      return;
     }
-  };
-
-  const handleSubmit = async (pin?: string) => {
-    const fullPin = pin || pins.join('');
-
-    if (fullPin.length < 4) return;
 
     setError('');
     setLoading(true);
@@ -79,7 +44,7 @@ export default function PinInputSection({ onSuccess }: PinInputSectionProps) {
       const response = await fetch('/api/verify-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: fullPin }),
+        body: JSON.stringify({ pin }),
       });
 
       const data = await response.json();
@@ -88,22 +53,14 @@ export default function PinInputSection({ onSuccess }: PinInputSectionProps) {
         onSuccess();
       } else {
         setError(data.message);
-        // 에러 시 입력란 초기화
-        setPins(['', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setPin('');
       }
     } catch (err) {
       setError('오류가 발생했습니다. 다시 시도해주세요.');
-      setPins(['', '', '', '']);
-      inputRefs.current[0]?.focus();
+      setPin('');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleSubmit();
   };
 
   return (
@@ -116,25 +73,22 @@ export default function PinInputSection({ onSuccess }: PinInputSectionProps) {
           PIN 코드를 입력하고 이벤트에 참여하세요
         </p>
 
-        <form onSubmit={handleFormSubmit} className="space-y-6">
-          {/* PIN 입력란 4개 */}
-          <div className="flex justify-center gap-3 sm:gap-4">
-            {pins.map((pin, index) => (
-              <input
-                key={index}
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
-                inputMode="numeric"
-                value={pin}
-                onChange={(e) => handleChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={index === 0 ? handlePaste : undefined}
-                className="w-14 h-14 sm:w-16 sm:h-16 border-2 border-gray-300 rounded-lg text-center text-2xl sm:text-3xl font-bold focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all"
-                maxLength={1}
-                disabled={loading}
-                autoFocus={index === 0}
-              />
-            ))}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* PIN 코드 입력 */}
+          <div className="relative">
+            <input
+              type="text"
+              value={pin}
+              onChange={handlePinChange}
+              className="w-full px-6 py-4 border-2 border-gray-300 rounded-lg text-center text-2xl sm:text-3xl font-bold tracking-widest focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all uppercase"
+              placeholder="P000000"
+              maxLength={7}
+              disabled={loading}
+              autoFocus
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+              {pin.length}/7
+            </div>
           </div>
 
           {error && (
@@ -145,16 +99,18 @@ export default function PinInputSection({ onSuccess }: PinInputSectionProps) {
 
           <button
             type="submit"
-            disabled={loading || pins.join('').length < 4}
+            disabled={loading || pin.length !== 7}
             className="w-full bg-gray-600 hover:bg-gray-700 disabled:bg-gray-300 text-white font-bold py-4 px-6 rounded-lg transition-colors"
           >
             {loading ? '확인 중...' : '시작하기'}
           </button>
         </form>
 
-        <p className="text-xs text-gray-400 mt-6">
-          테스트 PIN: 1234, 5678, 9999
-        </p>
+        <div className="mt-6 text-xs text-gray-500 space-y-1">
+          <p className="font-semibold">PIN 코드 형식:</p>
+          <p>• P로 시작하는 7자리 코드</p>
+          <p>• 예시: P123456</p>
+        </div>
       </div>
     </div>
   );

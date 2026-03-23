@@ -4,16 +4,19 @@ QR 코드 기반 룰렛 이벤트 페이지입니다.
 
 ## 기능
 
-- PIN 코드 인증 (4자리 개별 입력)
-- 광고 영상 시청 (전체 화면, 1분 후 건너뛰기 가능)
-- 원형 룰렛 UI (6개 영역)
-- GO 버튼 클릭으로 룰렛 회전
-- 서버에서 결과 받아오기
-- 회전 애니메이션 및 결과 모달
-- 1회 기본 참여 + 정보 입력 시 1회 추가 참여
-- Google Sheets 연동 (참여자 정보 저장)
-- 전화번호 중복 체크 (다른 기기에서도 재참여 방지)
-- A2z 폰트 적용
+- **PIN 코드 인증** (Excel 파일 기반, P + 6자리 숫자)
+- **광고 영상 시청** (전체 화면, 1분 후 건너뛰기 가능)
+- **원형 룰렛 UI** (6개 영역, 모든 영역 당첨)
+- **GO 버튼** 클릭으로 룰렛 회전
+- **서버 추첨** 시스템 (가중치 기반)
+- **회전 애니메이션** 및 결과 모달
+- **참여 제한**:
+  - 당첨: 정보 입력 후 종료 (1회만)
+  - 낙첨: 정보 입력 후 1회 추가 참여 (총 2회)
+- **Google Sheets 연동** (참여자 정보 자동 저장)
+- **전화번호 중복 체크** (다른 기기에서도 재참여 방지)
+- **전화번호 자동 포맷팅** (010-0000-0000)
+- **A2z 폰트** 적용
 
 ## 설치 및 실행
 
@@ -22,19 +25,33 @@ QR 코드 기반 룰렛 이벤트 페이지입니다.
 npm install
 ```
 
-2. 환경 변수 설정
+2. PIN 코드 파일 준비
+- Excel 파일을 `data/pin_code.xlsx`에 저장
+- JSON으로 변환: `node scripts/convert-pins.js`
+- PIN 코드 형식: P + 6자리 숫자 (예: P160817)
+- 자세한 내용: [PIN_CODE_GUIDE.md](./PIN_CODE_GUIDE.md)
+
+3. 환경 변수 설정
 - `.env.local` 파일 생성 (`.env.example` 참고)
 - Google Sheets API 설정 필요 → [설정 가이드](./GOOGLE_SHEETS_SETUP.md) 참조
 
-3. 개발 서버 실행
+4. 개발 서버 실행
 ```bash
 npm run dev
 ```
 
-4. 브라우저에서 접속
+5. 브라우저에서 접속
 ```
 http://localhost:3000
 ```
+
+## 📋 문서
+
+- **[PIN_CODE_GUIDE.md](./PIN_CODE_GUIDE.md)** - PIN 코드 시스템 가이드
+- **[GOOGLE_SHEETS_SETUP.md](./GOOGLE_SHEETS_SETUP.md)** - Google Sheets API 설정
+- **[VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)** - Vercel 배포 가이드
+- **[DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md)** - 배포 체크리스트
+- **[QUICK_START.md](./QUICK_START.md)** - 5분 빠른 시작
 
 ## Vercel 배포
 

@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { updateSecondResult } from '@/lib/googleSheets';
 
-// 6개 영역의 상품과 확률
+// 6개 영역의 상품과 확률 (꽝 없는 구조)
 const PRIZES = [
-  { sector: 1, name: '10% 할인', weight: 15, message: '10% 할인 쿠폰을 받으셨습니다!' },
-  { sector: 2, name: '꽝', weight: 35, message: '아쉽지만 다음 기회에 도전해보세요. 추가 참여로 한번 더 도전하세요!' },
-  { sector: 3, name: '무료쿠폰', weight: 10, message: '무료쿠폰을 받으셨습니다!' },
-  { sector: 4, name: '20% 할인', weight: 5, message: '20% 할인 쿠폰을 받으셨습니다!' },
-  { sector: 5, name: '꽝', weight: 30, message: '아쉽지만 다음 기회에 도전해보세요. 추가 참여로 한번 더 도전하세요!' },
-  { sector: 6, name: '5% 할인', weight: 5, message: '5% 할인 쿠폰을 받으셨습니다!' },
+  { sector: 1, name: '아메리카노', weight: 20, message: '아메리카노 쿠폰을 받으셨습니다!' },
+  { sector: 2, name: '간식', weight: 20, message: '간식 쿠폰을 받으셨습니다!' },
+  { sector: 3, name: '도어캠 6개월 무료', weight: 15, message: '도어캠 6개월 무료 이용권을 받으셨습니다!' },
+  { sector: 4, name: '아메리카노', weight: 20, message: '아메리카노 쿠폰을 받으셨습니다!' },
+  { sector: 5, name: '간식', weight: 20, message: '간식 쿠폰을 받으셨습니다!' },
+  { sector: 6, name: '설치비 무료', weight: 5, message: '설치비 무료 혜택을 받으셨습니다!' },
 ];
 
 function selectPrize() {
