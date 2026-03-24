@@ -6,8 +6,9 @@ import PrizesSection from './components/PrizesSection';
 import ProbabilitySection from './components/ProbabilitySection';
 import FilesSection from './components/FilesSection';
 import ParticipantsSection from './components/ParticipantsSection';
+import SettingsSection from './components/SettingsSection';
 
-type Tab = 'prizes' | 'probability' | 'files' | 'participants';
+type Tab = 'prizes' | 'probability' | 'files' | 'participants' | 'settings';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function AdminPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab') as Tab;
-      if (tab && ['prizes', 'probability', 'files', 'participants'].includes(tab)) {
+      if (tab && ['prizes', 'probability', 'files', 'participants', 'settings'].includes(tab)) {
         return tab;
       }
     }
@@ -129,6 +130,16 @@ export default function AdminPage() {
             >
               당첨 결과
             </button>
+            <button
+              onClick={() => handleTabChange('settings')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'settings'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              광고 설정
+            </button>
           </div>
         </div>
       </nav>
@@ -139,6 +150,7 @@ export default function AdminPage() {
         {activeTab === 'probability' && <ProbabilitySection />}
         {activeTab === 'files' && <FilesSection />}
         {activeTab === 'participants' && <ParticipantsSection />}
+        {activeTab === 'settings' && <SettingsSection />}
       </main>
     </div>
   );

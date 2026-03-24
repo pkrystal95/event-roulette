@@ -74,10 +74,16 @@ export async function POST(request: NextRequest) {
       try {
         console.log('📊 Supabase DB 업데이트 시도:', { phone, prize: prize.name });
 
-        // Supabase에서 해당 참가자의 2차 결과 업데이트
+        // 2차 당첨 여부 확인 (경품명이 "꽝"이 아닌 경우 당첨)
+        const isSecondWinner = prize.name !== '꽝';
+
+        // Supabase에서 해당 참가자의 2차 결과 및 당첨 여부 업데이트
         const { error: updateError } = await supabaseAdmin
           .from('participants')
-          .update({ second_result: prize.name })
+          .update({
+            second_result: prize.name,
+            is_winner: isSecondWinner  // 2차 당첨 시 is_winner를 true로 업데이트
+          })
           .eq('phone', phone)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -85,7 +91,7 @@ export async function POST(request: NextRequest) {
         if (updateError) {
           console.error('❌ Supabase 업데이트 실패:', updateError);
         } else {
-          console.log('✅ 두 번째 결과 업데이트 완료:', { phone, prize: prize.name });
+          console.log('✅ 두 번째 결과 업데이트 완료:', { phone, prize: prize.name, isSecondWinner });
         }
 
         // Google Sheets에도 기록 (백업용)

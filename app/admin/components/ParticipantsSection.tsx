@@ -18,13 +18,15 @@ export default function ParticipantsSection() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [prizeFilter, setPrizeFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     fetchParticipants();
-  }, [page, search, prizeFilter]);
+  }, [page, search, prizeFilter, startDate, endDate]);
 
   const fetchParticipants = async () => {
     setLoading(true);
@@ -34,6 +36,8 @@ export default function ParticipantsSection() {
         limit: '50',
         ...(search && { search }),
         ...(prizeFilter && { prize: prizeFilter }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
       });
 
       const response = await fetch(`/api/admin/participants?${params}`);
@@ -95,6 +99,32 @@ export default function ParticipantsSection() {
     }
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`'${name}' 참가자를 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/participants', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert('삭제되었습니다.');
+        fetchParticipants(); // 목록 새로고침
+      } else {
+        alert(data.message || '삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       {/* 헤더 */}
@@ -145,6 +175,42 @@ export default function ParticipantsSection() {
             검색
           </button>
         </div>
+
+        {/* 날짜 필터 */}
+        <div className="flex gap-4 items-center">
+          <label className="text-sm font-medium text-gray-700">참여일자:</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+          />
+          <span className="text-gray-500">~</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setPage(1);
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
+          />
+          {(startDate || endDate) && (
+            <button
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+                setPage(1);
+              }}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              날짜 초기화
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 테이블 */}
@@ -170,18 +236,21 @@ export default function ParticipantsSection() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 참여일시
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                관리
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   로딩 중...
                 </td>
               </tr>
             ) : participants.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                   데이터가 없습니다.
                 </td>
               </tr>
@@ -213,6 +282,14 @@ export default function ParticipantsSection() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {new Date(participant.created_at).toLocaleString('ko-KR')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <button
+                      onClick={() => handleDelete(participant.id, participant.name)}
+                      className="text-red-600 hover:text-red-800 font-medium"
+                    >
+                      삭제
+                    </button>
                   </td>
                 </tr>
               ))

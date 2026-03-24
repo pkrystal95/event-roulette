@@ -11,10 +11,26 @@ export default function VideoSection({ onComplete }: VideoSectionProps) {
   const [canSkip, setCanSkip] = useState(false);
   const [loading, setLoading] = useState(false);
   const [watchedTime, setWatchedTime] = useState(0);
+  const [adUrl, setAdUrl] = useState('https://www.w3schools.com/html/mov_bbb.mp4');
   const videoRef = useRef<HTMLVideoElement>(null);
   const maxWatchedTimeRef = useRef(0);
 
   useEffect(() => {
+    // 설정에서 광고 URL 로드
+    const loadAdUrl = async () => {
+      try {
+        const response = await fetch('/api/settings');
+        const data = await response.json();
+        if (data.success && data.settings.ad_url) {
+          setAdUrl(data.settings.ad_url);
+        }
+      } catch (error) {
+        console.error('Failed to load ad URL:', error);
+      }
+    };
+
+    loadAdUrl();
+
     // 비디오 자동 재생 시도
     if (videoRef.current) {
       videoRef.current.play().catch((err) => {
@@ -93,7 +109,7 @@ export default function VideoSection({ onComplete }: VideoSectionProps) {
         controlsList="nodownload nofullscreen noremoteplayback"
         disablePictureInPicture
       >
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4" />
+        <source src={adUrl} type="video/mp4" />
         영상을 불러올 수 없습니다.
       </video>
 

@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
     const prizeFilter = searchParams.get('prize') || '';
+    const startDate = searchParams.get('startDate') || '';
+    const endDate = searchParams.get('endDate') || '';
 
     // 페이지네이션 계산
     const offset = (page - 1) * limit;
@@ -39,6 +41,18 @@ export async function GET(request: NextRequest) {
       query = query.or(
         `first_result.eq.${prizeFilter},second_result.eq.${prizeFilter}`
       );
+    }
+
+    // 날짜 필터 (시작일)
+    if (startDate) {
+      query = query.gte('created_at', startDate);
+    }
+
+    // 날짜 필터 (종료일 - 다음날 00:00:00 전까지)
+    if (endDate) {
+      const endDateTime = new Date(endDate);
+      endDateTime.setDate(endDateTime.getDate() + 1);
+      query = query.lt('created_at', endDateTime.toISOString());
     }
 
     // 페이지네이션 적용
@@ -93,6 +107,52 @@ export async function POST(request: NextRequest) {
     console.error('Get all participants error:', error);
     return NextResponse.json(
       { success: false, message: '데이터 조회 중 오류가 발생했습니다.' },
+      { status: 500 }
+    );
+  }
+}
+
+// 당첨자 삭제 (테스트용)
+export async function DELETE(request: NextRequest) {
+  try {
+    // 인증 확인
+    const isAuthenticated = await checkAdminAuth();
+    if (!isAuthenticated) {
+      return NextResponse.json(
+        { success: false, message: '인증이 필요합니다.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, message: '삭제할 참가자 ID가 필요합니다.' },
+        { status: 400 }
+      );
+    }
+
+    // Supabase에서 삭제
+    const { error } = await supabaseAdmin
+      .from('participants')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Delete participant error:', error);
+      throw error;
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: '참가자가 삭제되었습니다.',
+    });
+  } catch (error) {
+    console.error('Delete participant error:', error);
+    return NextResponse.json(
+      { success: false, message: '삭제 중 오류가 발생했습니다.' },
       { status: 500 }
     );
   }
