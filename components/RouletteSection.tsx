@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { cookieUtils } from "@/lib/cookies";
+import { getRouletteImages } from "@/lib/assets";
 import Image from "next/image";
 
 // 6개 영역의 상품 (영역 1~6) - 꽝 없는 구조
@@ -39,6 +40,16 @@ export default function RouletteSection() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+  const [imageKey, setImageKey] = useState(Date.now());
+
+  // Supabase에서 이미지 URL 가져오기 (캐시 무효화를 위한 타임스탬프 추가)
+  const baseImages = getRouletteImages();
+  const images = {
+    front: `${baseImages.front}?t=${imageKey}`,
+    back: `${baseImages.back}?t=${imageKey}`,
+    arrow: `${baseImages.arrow}?t=${imageKey}`,
+    button: `${baseImages.button}?t=${imageKey}`,
+  };
 
   // 휴대폰 번호 자동 포맷팅 (010-0000-0000)
   const formatPhoneNumber = (value: string) => {
@@ -101,6 +112,10 @@ export default function RouletteSection() {
   const spinRoulette = async () => {
     setSpinning(true);
 
+    // 즉시 룰렛 회전 시작 (부드러운 UX를 위해)
+    const initialRotation = rotation + 360 * 3; // 3바퀴 먼저 돌림
+    setRotation(initialRotation);
+
     try {
       const response = await fetch("/api/spin", {
         method: "POST",
@@ -110,16 +125,19 @@ export default function RouletteSection() {
       const data = await response.json();
 
       if (data.success) {
-        // 서버에서 받은 sector 값으로 회전
+        // 서버에서 받은 sector 값으로 최종 회전
         const targetSector = data.sector || 1;
         const targetAngle =
           SECTOR_ANGLES[targetSector as keyof typeof SECTOR_ANGLES];
 
-        // 5바퀴 이상 회전 + 목표 각도
-        const baseRotation = 360 * 5;
-        const finalRotation = baseRotation + (360 - targetAngle);
+        // 추가로 2바퀴 더 돌고 목표 각도로 도착
+        const additionalRotation = 360 * 2;
+        const finalRotation = initialRotation + additionalRotation + (360 - targetAngle);
 
-        setRotation(rotation + finalRotation);
+        // 약간의 지연 후 최종 위치로 회전 (부드러운 전환)
+        setTimeout(() => {
+          setRotation(finalRotation);
+        }, 100);
 
         setTimeout(() => {
           setResult({
@@ -130,7 +148,7 @@ export default function RouletteSection() {
           setShowResultModal(true);
           setSpinning(false);
           setHasParticipated(true);
-        }, 4000);
+        }, 4100); // 100ms + 4000ms
       } else {
         alert(data.message);
         setSpinning(false);
@@ -206,26 +224,28 @@ export default function RouletteSection() {
             <div className="absolute -top-2 sm:-top-3 left-1/2 -translate-x-1/2 z-30">
               <div className="relative w-8 h-8 sm:w-10 sm:h-10">
                 <Image
-                  src="/assets/arrow.png"
+                  src={images.arrow}
                   alt="화살표"
                   fill
                   className="object-contain drop-shadow-md"
+                  unoptimized
                 />
               </div>
             </div>
-            {/* 뒷판 (고정) */}
+            {/* 뒷판 (고정) - 더 크게 */}
             <div className="absolute inset-0 z-10">
               <Image
-                src="/assets/back.png"
+                src={images.back}
                 alt="룰렛 뒷판"
                 fill
                 className="object-contain"
+                unoptimized
               />
             </div>
 
-            {/* 앞판 (회전) */}
+            {/* 앞판 (회전) - 뒷판보다 작게 */}
             <div
-              className="absolute inset-0 z-20"
+              className="absolute inset-[3%] z-20"
               style={{
                 transform: `rotate(${rotation}deg)`,
                 transition: spinning
@@ -234,10 +254,11 @@ export default function RouletteSection() {
               }}
             >
               <Image
-                src="/assets/front.png"
+                src={images.front}
                 alt="룰렛 앞판"
                 fill
                 className="object-contain"
+                unoptimized
               />
             </div>
 
@@ -250,10 +271,11 @@ export default function RouletteSection() {
               }`}
             >
               <Image
-                src="/assets/button.png"
+                src={images.button}
                 alt="GO 버튼"
                 fill
                 className="object-contain"
+                unoptimized
               />
             </button>
           </div>
@@ -261,14 +283,24 @@ export default function RouletteSection() {
 
         {/* 이미 참여한 경우 메시지 */}
         {hasParticipated && !spinning && (
-          <div className="mb-4 bg-red-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg animate-pulse">
-            이미 룰렛을 참여하셨습니다!
+          <div className="mb-4">
+            <div className="bg-red-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg animate-pulse mb-3">
+              이미 룰렛을 참여하셨습니다!
+            </div>
+            {!extraChanceUsed && result && (
+              <button
+                onClick={() => setShowResultModal(true)}
+                className="w-full max-w-xs mx-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg"
+              >
+                📝 정보 입력하고 한 번 더 도전하기
+              </button>
+            )}
           </div>
         )}
 
         <p className="text-xs text-purple-200 mt-6">
           {hasParticipated && !extraChanceUsed
-            ? "다시 도전하려면 정보를 입력해주세요"
+            ? "위 버튼을 눌러 정보를 입력해주세요"
             : hasParticipated && extraChanceUsed
               ? "모든 참여 기회를 사용하셨습니다"
               : "1회 참여 가능 (추가 참여 시 1회 더 기회 제공)"}
@@ -312,7 +344,16 @@ export default function RouletteSection() {
 
       {/* 결과 팝업 */}
       {showResultModal && result && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 animate-fadeIn">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 animate-fadeIn"
+          onClick={(e) => {
+            // 정보 입력이 완료된 후에만 배경 클릭으로 닫기 가능
+            if (extraChanceUsed && e.target === e.currentTarget) {
+              setShowResultModal(false);
+            }
+            // 정보 입력 전에는 배경 클릭으로 닫기 방지
+          }}
+        >
           <div className="bg-white rounded-2xl shadow-2xl p-4 w-full max-w-[340px] max-h-[90vh] overflow-y-auto animate-slideUp">
             <div className="text-center">
               <div className="text-4xl mb-2">{isWinner ? "🎉" : "😢"}</div>

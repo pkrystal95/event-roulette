@@ -21,6 +21,7 @@ export async function getGoogleSheetsClient() {
 export async function appendToSheet(data: {
   name: string;
   phone: string;
+  pinNumber?: string;
   firstResult: string;
   secondResult?: string;
   timestamp: string;
@@ -46,15 +47,16 @@ export async function appendToSheet(data: {
   ].filter(Boolean).join(', ') || '없음';
 
   // 데이터 추가
-  // A: 이름, B: 전화번호, C: 참여횟수, D: 당첨횟수, E: 1차결과, F: 2차결과, G: 당첨상품, H: 참여시간
+  // A: 이름, B: 전화번호, C: PIN번호, D: 참여횟수, E: 당첨횟수, F: 1차결과, G: 2차결과, H: 당첨상품, I: 참여시간
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: 'Sheet1!A:H',
+    range: 'Sheet1!A:I',
     valueInputOption: 'USER_ENTERED',
     requestBody: {
       values: [[
         data.name,
         data.phone,
+        data.pinNumber || '-',
         participationCount,
         winCount,
         data.firstResult,
@@ -107,17 +109,17 @@ export async function initializeSheet() {
     // 첫 번째 행에 헤더가 있는지 확인
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A1:H1',
+      range: 'Sheet1!A1:I1',
     });
 
     // 헤더가 없으면 추가
     if (!response.data.values || response.data.values.length === 0) {
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: 'Sheet1!A1:H1',
+        range: 'Sheet1!A1:I1',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [['이름', '전화번호', '참여수', '당첨수', '1차 결과', '2차 결과', '당첨 상품', '참여시간']],
+          values: [['이름', '전화번호', 'PIN번호', '참여수', '당첨수', '1차 결과', '2차 결과', '당첨 상품', '참여시간']],
         },
       });
     }
@@ -141,7 +143,7 @@ export async function updateSecondResult(phone: string, secondResult: string) {
     // 전화번호로 행 찾기
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: 'Sheet1!A:H',
+      range: 'Sheet1!A:I',
     });
 
     const values = response.data.values || [];
@@ -169,7 +171,7 @@ export async function updateSecondResult(phone: string, secondResult: string) {
 
     // 기존 데이터 가져오기
     const existingData = values[rowIndex];
-    const firstResult = existingData[4];
+    const firstResult = existingData[5]; // PIN 추가로 인덱스 변경: 4 -> 5
 
     // 당첨 여부 재계산
     const isFirstWin = !firstResult.includes('꽝');
@@ -184,14 +186,14 @@ export async function updateSecondResult(phone: string, secondResult: string) {
       isSecondWin ? secondResult : null,
     ].filter(Boolean).join(', ') || '없음';
 
-    // 2차 결과, 참여수, 당첨수, 당첨상품 업데이트
+    // 2차 결과, 참여수, 당첨수, 당첨상품 업데이트 (D열부터 H열)
     const updateData = [participationCount, winCount, firstResult, secondResult, winningPrizes];
     console.log('📊 업데이트할 데이터:', updateData);
-    console.log('📊 업데이트 범위:', `Sheet1!C${actualRow}:G${actualRow}`);
+    console.log('📊 업데이트 범위:', `Sheet1!D${actualRow}:H${actualRow}`);
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `Sheet1!C${actualRow}:G${actualRow}`,
+      range: `Sheet1!D${actualRow}:H${actualRow}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [updateData],

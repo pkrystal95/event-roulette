@@ -1,29 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { updateSecondResult } from '@/lib/googleSheets';
+import { supabaseAdmin } from '@/lib/supabase';
 
-// 6개 영역의 상품과 확률 (꽝 없는 구조)
-const PRIZES = [
-  { sector: 1, name: '아메리카노', weight: 20, message: '아메리카노 쿠폰을 받으셨습니다!' },
-  { sector: 2, name: '간식', weight: 20, message: '간식 쿠폰을 받으셨습니다!' },
-  { sector: 3, name: '도어캠 6개월 무료', weight: 15, message: '도어캠 6개월 무료 이용권을 받으셨습니다!' },
-  { sector: 4, name: '아메리카노', weight: 20, message: '아메리카노 쿠폰을 받으셨습니다!' },
-  { sector: 5, name: '간식', weight: 20, message: '간식 쿠폰을 받으셨습니다!' },
-  { sector: 6, name: '설치비 무료', weight: 5, message: '설치비 무료 혜택을 받으셨습니다!' },
-];
+// DB에서 경품을 조회하고 추첨하는 함수
+async function selectPrize() {
+  // Supabase에서 활성화된 경품 조회
+  const { data: prizes, error } = await supabaseAdmin
+    .from('prizes')
+    .select('*')
+    .eq('is_active', true)
+    .order('sector', { ascending: true });
 
-function selectPrize() {
-  const totalWeight = PRIZES.reduce((sum, prize) => sum + prize.weight, 0);
+  if (error || !prizes || prizes.length === 0) {
+    throw new Error('경품 정보를 불러올 수 없습니다.');
+  }
+
+  // 확률 기반 추첨
+  const totalWeight = prizes.reduce((sum: number, prize: any) => sum + parseFloat(prize.weight), 0);
   let random = Math.random() * totalWeight;
 
-  for (const prize of PRIZES) {
-    random -= prize.weight;
+  for (const prize of prizes) {
+    random -= parseFloat(prize.weight);
     if (random <= 0) {
-      return prize;
+      return {
+        sector: prize.sector,
+        name: prize.name,
+        message: prize.message,
+        weight: prize.weight,
+      };
     }
   }
 
-  return PRIZES[1]; // 기본값 (꽝)
+  // 기본값 (첫 번째 경품)
+  return {
+    sector: prizes[0].sector,
+    name: prizes[0].name,
+    message: prizes[0].message,
+    weight: prizes[0].weight,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -48,24 +63,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 상품 추첨
-    const prize = selectPrize();
+    // 상품 추첨 (DB에서 조회)
+    const prize = await selectPrize();
 
-    // 두 번째 참여인 경우 Google Sheets에 결과 업데이트
+    // 두 번째 참여인 경우 Supabase DB에 결과 업데이트
     const isSecondSpin = extraChanceUsed && !participated && phone;
     console.log('🎰 두 번째 스핀 체크:', { isSecondSpin, extraChanceUsed, participated, phone });
 
     if (isSecondSpin) {
       try {
-        console.log('📊 Google Sheets 업데이트 시도:', { phone, prize: prize.name });
-        await updateSecondResult(phone, prize.name);
-        console.log('✅ 두 번째 결과 업데이트 완료:', { phone, prize: prize.name });
+        console.log('📊 Supabase DB 업데이트 시도:', { phone, prize: prize.name });
+
+        // Supabase에서 해당 참가자의 2차 결과 업데이트
+        const { error: updateError } = await supabaseAdmin
+          .from('participants')
+          .update({ second_result: prize.name })
+          .eq('phone', phone)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (updateError) {
+          console.error('❌ Supabase 업데이트 실패:', updateError);
+        } else {
+          console.log('✅ 두 번째 결과 업데이트 완료:', { phone, prize: prize.name });
+        }
+
+        // Google Sheets에도 기록 (백업용)
+        try {
+          await updateSecondResult(phone, prize.name);
+        } catch (sheetsError) {
+          console.error('Google Sheets 업데이트 실패 (무시):', sheetsError);
+        }
       } catch (error) {
         console.error('❌ 두 번째 결과 업데이트 실패:', error);
         // 에러가 발생해도 사용자에게는 결과를 보여줌
       }
     } else {
-      console.log('ℹ️ 첫 번째 스핀 - Google Sheets 업데이트 생략');
+      console.log('ℹ️ 첫 번째 스핀 - DB 업데이트 생략');
     }
 
     // 참여 완료 쿠키 설정

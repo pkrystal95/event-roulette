@@ -17,10 +17,19 @@ export async function POST(request: NextRequest) {
     const isValid = verifyPinCode(pin);
 
     if (isValid) {
-      return NextResponse.json({
+      // PIN 코드를 쿠키에 저장 (나중에 참가자 정보 저장 시 사용)
+      const response = NextResponse.json({
         success: true,
         message: 'PIN 코드가 확인되었습니다.',
       });
+
+      response.cookies.set('event_pin', pin, {
+        maxAge: 60 * 60 * 24, // 1일
+        httpOnly: true,
+        path: '/',
+      });
+
+      return response;
     } else {
       return NextResponse.json(
         { success: false, message: '올바르지 않은 PIN 코드입니다. PIN 코드를 확인해주세요.' },
