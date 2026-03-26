@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import Cookies from 'js-cookie';
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
 
 interface Results {
   name: string;
@@ -12,7 +12,13 @@ interface Results {
   createdAt: string;
 }
 
-export default function MyResultsSection() {
+interface MyResultsSectionProps {
+  onBackToRoulette?: () => void;
+}
+
+export default function MyResultsSection({
+  onBackToRoulette,
+}: MyResultsSectionProps) {
   const [results, setResults] = useState<Results | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,25 +26,27 @@ export default function MyResultsSection() {
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const phone = Cookies.get('event_phone');
+        const phone = Cookies.get("event_phone");
 
         if (!phone) {
-          setError('전화번호 정보를 찾을 수 없습니다.');
+          setError("전화번호 정보를 찾을 수 없습니다.");
           setLoading(false);
           return;
         }
 
-        const response = await fetch(`/api/my-results?phone=${encodeURIComponent(phone)}`);
+        const response = await fetch(
+          `/api/my-results?phone=${encodeURIComponent(phone)}`,
+        );
         const data = await response.json();
 
         if (data.success) {
           setResults(data.results);
         } else {
-          setError(data.message || '참여 내역을 불러올 수 없습니다.');
+          setError(data.message || "참여 내역을 불러올 수 없습니다.");
         }
       } catch (err) {
-        console.error('결과 조회 오류:', err);
-        setError('서버 오류가 발생했습니다.');
+        console.error("결과 조회 오류:", err);
+        setError("서버 오류가 발생했습니다.");
       } finally {
         setLoading(false);
       }
@@ -48,13 +56,13 @@ export default function MyResultsSection() {
   }, []);
 
   const getPrizeIcon = (prize: string) => {
-    if (prize === '꽝') return '😢';
-    return '🎁';
+    if (prize === "꽝") return "😢";
+    return "🎁";
   };
 
   const getPrizeColor = (prize: string) => {
-    if (prize === '꽝') return 'text-gray-500';
-    return 'text-yellow-500';
+    if (prize === "꽝") return "text-gray-500";
+    return "text-yellow-500";
   };
 
   if (loading) {
@@ -87,12 +95,8 @@ export default function MyResultsSection() {
         {/* 헤더 */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">🎉</div>
-          <h1 className="text-3xl font-bold mb-2 text-gray-800">
-            참여 완료!
-          </h1>
-          <p className="text-gray-600">
-            {results.name}님의 참여 내역입니다
-          </p>
+          <h1 className="text-3xl font-bold mb-2 text-gray-800">참여 완료!</h1>
+          <p className="text-gray-600">{results.name}님의 참여 내역입니다</p>
         </div>
 
         {/* 참여 정보 */}
@@ -110,40 +114,56 @@ export default function MyResultsSection() {
         {/* 최종 결과 (2차가 있으면 2차, 없으면 1차) */}
         <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-2xl p-6 mb-6">
           <div className="flex items-center justify-center mb-2">
-            <span className={`text-3xl ${getPrizeIcon(results.secondResult || results.firstResult)}`}>
+            <span
+              className={`text-3xl ${getPrizeIcon(results.secondResult || results.firstResult)}`}
+            >
               {getPrizeIcon(results.secondResult || results.firstResult)}
             </span>
           </div>
-          <div className={`text-2xl font-bold text-center ${getPrizeColor(results.secondResult || results.firstResult)}`}>
+          <div
+            className={`text-2xl font-bold text-center ${getPrizeColor(results.secondResult || results.firstResult)}`}
+          >
             {results.secondResult || results.firstResult}
           </div>
         </div>
 
         {/* 당첨 여부 */}
-        <div className={`rounded-2xl p-6 mb-6 text-center ${
-          results.isWinner
-            ? 'bg-gradient-to-r from-green-400 to-emerald-500'
-            : 'bg-gradient-to-r from-gray-400 to-gray-500'
-        }`}>
+        <div
+          className={`rounded-2xl p-6 mb-6 text-center ${
+            results.isWinner
+              ? "bg-gradient-to-r from-green-400 to-emerald-500"
+              : "bg-gradient-to-r from-gray-400 to-gray-500"
+          }`}
+        >
           <div className="text-white">
             <div className="text-4xl mb-3">
-              {results.isWinner ? '🎊' : '😊'}
+              {results.isWinner ? "🎊" : "😊"}
             </div>
             <div className="text-2xl font-bold mb-2">
-              {results.isWinner ? '축하합니다!' : '아쉽지만...'}
+              {results.isWinner ? "축하합니다!" : "아쉽지만..."}
             </div>
             <div className="text-lg">
               {results.isWinner
-                ? '경품에 당첨되셨습니다!'
-                : '다음 기회에 도전해 주세요!'}
+                ? "경품에 당첨되셨습니다!"
+                : "다음 기회에 도전해 주세요!"}
             </div>
           </div>
         </div>
 
         {/* 참여 일시 */}
         <div className="text-center mt-6 text-sm text-gray-500">
-          참여 일시: {new Date(results.createdAt).toLocaleString('ko-KR')}
+          참여 일시: {new Date(results.createdAt).toLocaleString("ko-KR")}
         </div>
+
+        {/* 룰렛으로 돌아가기 버튼 */}
+        {onBackToRoulette && (
+          <button
+            onClick={onBackToRoulette}
+            className="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+          >
+            룰렛으로 돌아가기
+          </button>
+        )}
       </div>
     </div>
   );

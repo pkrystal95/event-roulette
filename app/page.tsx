@@ -25,12 +25,17 @@ export default function Home() {
     setStep('results');
   };
 
+  // 룰렛으로 돌아가기
+  const handleBackToRoulette = () => {
+    setStep('roulette');
+  };
+
   return (
     <main>
       {step === 'pin' && <PinInputSection onSuccess={handlePinSuccess} />}
       {step === 'video' && <VideoSection onComplete={handleVideoComplete} />}
       {step === 'roulette' && <RouletteSection onShowResults={handleShowResults} />}
-      {step === 'results' && <MyResultsSection />}
+      {step === 'results' && <MyResultsSection onBackToRoulette={handleBackToRoulette} />}
     </main>
   );
 }
