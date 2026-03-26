@@ -251,12 +251,12 @@ export default function PrizesSection() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  섹터 (1-6)
+                  섹터 (1-4)
                 </label>
                 <input
                   type="number"
                   min="1"
-                  max="6"
+                  max="4"
                   value={formData.sector}
                   onChange={(e) => setFormData({ ...formData, sector: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"

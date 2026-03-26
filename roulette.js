@@ -16,26 +16,21 @@ function getCookie(name) {
     return null;
 }
 
-// 상품 매핑 (1~6번 영역)
+// 상품 매핑 (1~4번 영역)
 const prizes = {
-    1: "10% 할인",
-    2: "꽝",
-    3: "무료쿠폰",
-    4: "20% 할인",
-    5: "꽝",
-    6: "5% 할인"
+    1: "꽝",
+    2: "랩톱 미니스팀",
+    3: "펩시 콜라 9캔",
+    4: "아메리카노"
 };
 
 // 각 영역의 시작 각도 (12시 방향이 0도)
-// 영역 1: 0~60도, 영역 2: 60~120도, 영역 3: 120~180도
-// 영역 4: 180~240도, 영역 5: 240~300도, 영역 6: 300~360도
+// 영역 1: 0~90도, 영역 2: 90~180도, 영역 3: 180~270도, 영역 4: 270~360도
 const sectorAngles = {
-    1: { start: 0, end: 60, target: 30 },
-    2: { start: 60, end: 120, target: 90 },
-    3: { start: 120, end: 180, target: 150 },
-    4: { start: 180, end: 240, target: 210 },
-    5: { start: 240, end: 300, target: 270 },
-    6: { start: 300, end: 360, target: 330 }
+    1: { start: 0, end: 90, target: 45 },
+    2: { start: 90, end: 180, target: 135 },
+    3: { start: 180, end: 270, target: 225 },
+    4: { start: 270, end: 360, target: 315 }
 };
 
 // DOM 요소
@@ -90,9 +85,9 @@ async function spinRoulette() {
 
         const data = await response.json();
 
-        // 결과값 검증 (1~6 사이)
+        // 결과값 검증 (1~4 사이)
         const resultSector = parseInt(data.result);
-        if (isNaN(resultSector) || resultSector < 1 || resultSector > 6) {
+        if (isNaN(resultSector) || resultSector < 1 || resultSector > 4) {
             throw new Error('유효하지 않은 결과값');
         }
 
