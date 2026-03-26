@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import Cookies from "js-cookie";
 import { cookieUtils } from "@/lib/cookies";
 import { getRouletteImages } from "@/lib/assets";
 import Image from "next/image";
@@ -25,7 +26,11 @@ const SECTOR_ANGLES = {
   6: 330, // 300~360도
 };
 
-export default function RouletteSection() {
+interface RouletteSectionProps {
+  onShowResults?: () => void;
+}
+
+export default function RouletteSection({ onShowResults }: RouletteSectionProps) {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [showResultModal, setShowResultModal] = useState(false);
@@ -41,6 +46,9 @@ export default function RouletteSection() {
   const [phone, setPhone] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   const [imageKey, setImageKey] = useState(Date.now());
+
+  // 중복 회전 방지를 위한 ref
+  const isSpinningRef = useRef(false);
 
   // Supabase에서 이미지 URL 가져오기 (캐시 무효화를 위한 타임스탬프 추가)
   const baseImages = getRouletteImages();
@@ -75,8 +83,13 @@ export default function RouletteSection() {
   };
 
   useEffect(() => {
-    setHasParticipated(cookieUtils.hasParticipated());
-    setExtraChanceUsed(cookieUtils.hasUsedExtraChance());
+    const participated = cookieUtils.hasParticipated();
+    const extraUsed = cookieUtils.hasUsedExtraChance();
+
+    console.log('🔍 초기 상태 확인:', { participated, extraUsed });
+
+    setHasParticipated(participated);
+    setExtraChanceUsed(extraUsed);
   }, []);
 
   // 결과 팝업 열릴 때 body 스크롤 막기
@@ -94,41 +107,89 @@ export default function RouletteSection() {
   }, [showResultModal]);
 
   const handleSpinButtonClick = async () => {
-    if (spinning) return;
+    const timestamp = new Date().toISOString();
+    console.log('================================');
+    console.log('🎯 GO 버튼 클릭:', timestamp);
+    console.log('현재 상태:', {
+      spinning,
+      isSpinningRef: isSpinningRef.current,
+      hasParticipated,
+      extraChanceUsed,
+      result: result ? result.prize : null
+    });
+
+    // 중복 클릭 방지
+    if (spinning || isSpinningRef.current) {
+      console.log('⚠️ 버튼 중복 클릭 무시 (이미 회전 중)');
+      return;
+    }
 
     if (hasParticipated && extraChanceUsed) {
+      console.log('⚠️ 모든 참여 기회 사용됨');
       alert("이미 모든 참여 기회를 사용하셨습니다.");
       return;
     }
 
     if (hasParticipated && !extraChanceUsed) {
+      console.log('⚠️ 정보 입력 필요');
       alert("결과 팝업에서 정보를 입력하고 한 번 더 도전하세요!");
       return;
     }
 
+    console.log('✅ 룰렛 시작 조건 만족 - spinRoulette() 호출');
     await spinRoulette();
   };
 
   const spinRoulette = async () => {
+    const callTimestamp = new Date().toISOString();
+    console.log('--------------------------------');
+    console.log('📞 spinRoulette() 호출됨:', callTimestamp);
+    console.log('호출 시점 상태:', {
+      isSpinningRef: isSpinningRef.current,
+      spinning,
+      hasParticipated,
+      extraChanceUsed
+    });
+
+    // ref로 중복 호출 완전 차단
+    if (isSpinningRef.current || spinning) {
+      console.log('⚠️ spinRoulette() 중복 호출 차단! (ref:', isSpinningRef.current, ', state:', spinning, ')');
+      console.log('--------------------------------');
+      return;
+    }
+
+    console.log('🎰 룰렛 회전 시작 - ref와 state 설정');
+    isSpinningRef.current = true;
     setSpinning(true);
+    console.log('상태 업데이트 완료:', { isSpinningRef: isSpinningRef.current, spinning: true });
 
     // 즉시 룰렛 회전 시작 (부드러운 UX를 위해)
     const initialRotation = rotation + 360 * 3; // 3바퀴 먼저 돌림
     setRotation(initialRotation);
 
     try {
+      // API 호출 전 한 번 더 체크
+      if (!isSpinningRef.current) {
+        console.log('⚠️ 회전 중단됨 (ref 변경 감지)');
+        return;
+      }
+
+      console.log('📡 API 호출 시작');
       const response = await fetch("/api/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
 
       const data = await response.json();
+      console.log('📥 API 응답 받음:', data);
 
       if (data.success) {
         // 서버에서 받은 sector 값으로 최종 회전
         const targetSector = data.sector || 1;
         const targetAngle =
           SECTOR_ANGLES[targetSector as keyof typeof SECTOR_ANGLES];
+
+        console.log('🎯 목표 섹터:', targetSector, '/ 각도:', targetAngle);
 
         // 추가로 2바퀴 더 돌고 목표 각도로 도착
         const additionalRotation = 360 * 2;
@@ -140,6 +201,7 @@ export default function RouletteSection() {
         }, 100);
 
         setTimeout(() => {
+          console.log('⏰ 4.1초 타이머 실행 - 결과 표시');
           setResult({
             prize: data.prize,
             message: data.message,
@@ -147,23 +209,36 @@ export default function RouletteSection() {
           });
           setShowResultModal(true);
           setSpinning(false);
+          isSpinningRef.current = false; // ref 초기화
           setHasParticipated(true);
+          console.log('✅ 룰렛 회전 완료 및 상태 초기화:', {
+            result: data.prize,
+            spinning: false,
+            isSpinningRef: false,
+            hasParticipated: true
+          });
+          console.log('================================');
         }, 4100); // 100ms + 4000ms
       } else {
         alert(data.message);
         setSpinning(false);
+        isSpinningRef.current = false; // ref 초기화
       }
     } catch (err) {
       alert("오류가 발생했습니다. 다시 시도해주세요.");
       setSpinning(false);
+      isSpinningRef.current = false; // ref 초기화
     }
   };
 
-  const handleExtraFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormLoading(true);
+  // 정보만 제출하고 종료 (1회만 참여)
+  const handleSubmitOnly = async () => {
+    if (!name || !phone) {
+      alert("이름과 전화번호를 입력해주세요.");
+      return;
+    }
 
-    const isFirstWin = result && !result.prize.includes("꽝");
+    setFormLoading(true);
 
     try {
       const response = await fetch("/api/extra-chance", {
@@ -172,30 +247,22 @@ export default function RouletteSection() {
         body: JSON.stringify({
           name,
           phone,
-          firstResult: result?.prize || "", // 첫 번째 결과 전송
-          isWinner: isFirstWin, // 당첨 여부 전송
+          firstResult: result?.prize || "",
+          isWinner: true, // 모든 상품 당첨
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        console.log('✅ 정보 제출 완료 (1회만):', { name, phone });
+
         setName("");
         setPhone("");
         setExtraChanceUsed(true);
+        setShowResultModal(false);
 
-        // 당첨자는 정보만 제출하고 종료
-        if (isFirstWin) {
-          setShowResultModal(false);
-          alert("매장 상담사에게 당첨 화면을 보여주세요.");
-        } else {
-          // 낙첨자는 추가 참여
-          setShowResultModal(false);
-          setHasParticipated(false);
-          setTimeout(() => {
-            spinRoulette();
-          }, 500);
-        }
+        alert("매장 상담사에게 당첨 화면을 보여주세요.");
       } else {
         alert(data.message);
       }
@@ -206,7 +273,47 @@ export default function RouletteSection() {
     }
   };
 
-  const isWinner = result && !result.prize.includes("꽝");
+  // 정보 제출하고 2차 도전
+  const handleExtraFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormLoading(true);
+
+    try {
+      const response = await fetch("/api/extra-chance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          phone,
+          firstResult: result?.prize || "",
+          isWinner: false, // 2차 도전을 위해 false로 전송
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('✅ 정보 제출 완료 (2차 도전):', { name, phone });
+
+        setName("");
+        setPhone("");
+        setExtraChanceUsed(true);
+        setShowResultModal(false);
+
+        // 2차 도전 가능 상태로 변경
+        setHasParticipated(false);
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert("오류가 발생했습니다. 다시 시도해주세요.");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // 모든 상품이 당첨 (꽝 없음)
+  const isWinner = true;
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-600 to-purple-800 px-4 py-12">
@@ -285,26 +392,35 @@ export default function RouletteSection() {
         {hasParticipated && !spinning && (
           <div className="mb-4">
             <div className="bg-red-500 text-white px-6 py-3 rounded-lg font-bold shadow-lg animate-pulse mb-3">
-              이미 룰렛을 참여하셨습니다!
+              이미 참여하셨습니다!
             </div>
-            {!extraChanceUsed && result && (
-              <button
-                onClick={() => setShowResultModal(true)}
-                className="w-full max-w-xs mx-auto bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-lg"
-              >
-                📝 정보 입력하고 한 번 더 도전하기
-              </button>
-            )}
           </div>
         )}
 
         <p className="text-xs text-purple-200 mt-6">
-          {hasParticipated && !extraChanceUsed
-            ? "위 버튼을 눌러 정보를 입력해주세요"
+          {hasParticipated && !extraChanceUsed && result
+            ? "결과 팝업에서 정보를 입력해주세요"
             : hasParticipated && extraChanceUsed
-              ? "모든 참여 기회를 사용하셨습니다"
-              : "1회 참여 가능 (추가 참여 시 1회 더 기회 제공)"}
+              ? "참여가 완료되었습니다"
+              : !hasParticipated && extraChanceUsed && result
+                ? "GO 버튼을 눌러 2차 도전하세요"
+              : hasParticipated && !result
+                ? "룰렛 결과를 확인하는 중..."
+                : ""}
         </p>
+
+        {/* 참여 완료 후 당첨 내역 확인 버튼 */}
+        {hasParticipated && extraChanceUsed && (
+          <div className="mt-6">
+            <button
+              onClick={() => onShowResults?.()}
+              className="w-full max-w-xs mx-auto bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+            >
+              <span className="text-2xl">🎁</span>
+              <span>당첨 내역 확인하기</span>
+            </button>
+          </div>
+        )}
 
         {/* 유의사항 */}
         <div className="mt-12 bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 text-left">
@@ -361,7 +477,7 @@ export default function RouletteSection() {
                 {isWinner ? "축하합니다!" : "아쉽네요"}
               </h3>
               <div
-                className={`text-lg font-bold mb-3 ${isWinner ? "text-green-600" : "text-gray-600"}`}
+                className={`text-lg font-bold mb-3 text-green-600`}
               >
                 {result.prize}
               </div>
@@ -379,11 +495,9 @@ export default function RouletteSection() {
               {!extraChanceUsed ? (
                 <>
                   <p className="text-xs text-purple-600 mb-3 font-semibold">
-                    {isWinner
-                      ? "당첨자 정보를 입력해주세요"
-                      : "정보 입력 시 한 번 더 도전!"}
+                    당첨자 정보를 입력해주세요
                   </p>
-                  <form onSubmit={handleExtraFormSubmit} className="space-y-2">
+                  <div className="space-y-2">
                     <div>
                       <input
                         type="text"
@@ -405,22 +519,43 @@ export default function RouletteSection() {
                         required
                       />
                     </div>
-                    <button
-                      type="submit"
-                      disabled={formLoading || !name || !phone}
-                      className="w-full bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 disabled:from-gray-300 disabled:to-gray-300 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105 disabled:transform-none text-sm"
-                    >
-                      {formLoading
-                        ? "처리 중..."
-                        : isWinner
-                          ? "정보 제출하기"
-                          : "한 번 더 도전하기"}
-                    </button>
-                  </form>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSubmitOnly}
+                        disabled={formLoading || !name || !phone}
+                        className="flex-1 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 disabled:from-gray-300 disabled:to-gray-300 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105 disabled:transform-none text-sm"
+                      >
+                        확인
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleExtraFormSubmit(e as any);
+                        }}
+                        disabled={formLoading || !name || !phone}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 disabled:from-gray-300 disabled:to-gray-300 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105 disabled:transform-none text-sm"
+                      >
+                        {formLoading ? "처리 중..." : "한 번 더!"}
+                      </button>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <button
-                  onClick={() => setShowResultModal(false)}
+                  onClick={() => {
+                    // 두 번째 참여가 완료된 경우 (event_participated 쿠키 확인)
+                    const participated = Cookies.get('event_participated') === 'true';
+
+                    if (participated) {
+                      // 당첨 내역 페이지로 이동
+                      setShowResultModal(false);
+                      onShowResults?.();
+                    } else {
+                      // 첫 번째 당첨 후 정보 제출한 경우
+                      setShowResultModal(false);
+                    }
+                  }}
                   className="w-full bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold py-2 px-6 rounded-lg transition-all transform hover:scale-105 text-sm"
                 >
                   확인

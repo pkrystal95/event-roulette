@@ -1,4 +1,4 @@
-export type Step = 'pin' | 'video' | 'roulette';
+export type Step = 'pin' | 'video' | 'roulette' | 'results';
 
 export interface EventState {
   step: Step;

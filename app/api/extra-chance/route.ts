@@ -121,17 +121,17 @@ export async function POST(request: NextRequest) {
       path: '/',
     });
 
+    // 전화번호 쿠키 저장 (모든 사용자)
+    response.cookies.set('event_phone', phone, {
+      maxAge: 60 * 60 * 24 * 365, // 1년
+      httpOnly: false,
+      path: '/',
+    });
+
     // 낙첨자만 추가 참여 가능하도록 쿠키 설정
     if (!isWinner) {
       // 참여 쿠키 삭제 (다시 룰렛 참여 가능)
       response.cookies.delete('event_participated');
-
-      // 두 번째 결과 업데이트를 위해 전화번호 저장
-      response.cookies.set('event_phone', phone, {
-        maxAge: 60 * 60 * 24, // 1일
-        httpOnly: true,
-        path: '/',
-      });
 
       console.log('✅ 낙첨자 쿠키 삭제 완료 - 2차 참여 가능');
     } else {
