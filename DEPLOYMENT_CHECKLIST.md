@@ -13,13 +13,15 @@ Vercel 배포 전에 확인해야 할 사항들입니다.
 
 ### 로컬 테스트
 - [ ] `.env.local` 파일 생성 및 환경 변수 설정
+- [ ] Supabase 프로젝트 설정 및 테이블 생성
 - [ ] `npm run build` 성공 확인
 - [ ] `npm run dev`로 로컬에서 전체 기능 테스트
-  - [ ] PIN 입력 (1234, 5678, 9999)
+  - [ ] PIN 입력 (data/pin_codes.json에 있는 유효한 PIN 코드 사용)
   - [ ] 영상 시청
   - [ ] 룰렛 회전 (1차)
   - [ ] 정보 입력
-  - [ ] Google Sheets에 데이터 저장 확인
+  - [ ] Supabase DB에 데이터 저장 확인
+  - [ ] Google Sheets 백업 확인
   - [ ] 전화번호 중복 체크
   - [ ] 룰렛 회전 (2차)
   - [ ] 2차 결과 업데이트 확인
@@ -44,6 +46,18 @@ Vercel 배포 전에 확인해야 할 사항들입니다.
 - [ ] `GOOGLE_SHEET_ID` 추가
   - [ ] 스프레드시트 ID 입력
   - [ ] Production, Preview, Development 모두 체크
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` 추가
+  - [ ] Supabase 프로젝트 URL 입력
+  - [ ] Production, Preview, Development 모두 체크
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` 추가
+  - [ ] Supabase anon key 입력
+  - [ ] Production, Preview, Development 모두 체크
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` 추가
+  - [ ] Supabase service role key 입력
+  - [ ] Production, Preview, Development 모두 체크
+- [ ] `ADMIN_PASSWORD` 추가
+  - [ ] 관리자 비밀번호 설정
+  - [ ] Production, Preview, Development 모두 체크
 
 ### 배포 실행
 - [ ] "Deploy" 버튼 클릭
@@ -54,16 +68,19 @@ Vercel 배포 전에 확인해야 할 사항들입니다.
 
 ### 기능 테스트
 - [ ] 배포된 URL 접속
-- [ ] PIN 입력 페이지 정상 작동
+- [ ] PIN 입력 페이지 정상 작동 (유효한 PIN 코드 사용)
 - [ ] 영상 시청 페이지 정상 작동
 - [ ] 룰렛 회전 (1차)
 - [ ] 결과 팝업 표시
 - [ ] 정보 입력 폼
-- [ ] Google Sheets 데이터 저장 확인
+- [ ] Supabase DB 데이터 저장 확인
+- [ ] Google Sheets 백업 확인
 - [ ] 전화번호 자동 포맷팅 (`010-0000-0000`)
 - [ ] 전화번호 중복 체크 작동
 - [ ] 룰렛 회전 (2차)
 - [ ] 2차 결과 업데이트 확인
+- [ ] 관리자 페이지 접속 (`/admin`)
+- [ ] 관리자 기능 테스트 (경품 설정, 참가자 조회 등)
 
 ### 모바일 테스트
 - [ ] 모바일 브라우저에서 접속
@@ -74,18 +91,25 @@ Vercel 배포 전에 확인해야 할 사항들입니다.
 - [ ] 룰렛 회전 애니메이션
 - [ ] 팝업 스크롤 정상 작동
 
-### Google Sheets 확인
+### 데이터베이스 확인
+
+**Supabase DB (메인)**
+- [ ] Supabase 대시보드 열기
+- [ ] `participants` 테이블 확인
+- [ ] 데이터 저장 확인:
+  - [ ] name: 이름
+  - [ ] phone: 전화번호 (010-0000-0000 형식)
+  - [ ] first_result: 1차 결과
+  - [ ] second_result: 2차 결과 (null 또는 경품명)
+  - [ ] is_winner: 당첨 여부 (boolean)
+  - [ ] created_at: 참여시간
+- [ ] `prizes` 테이블 확인
+  - [ ] 경품 설정이 올바른지 확인
+
+**Google Sheets (백업)**
 - [ ] 스프레드시트 열기
 - [ ] 헤더 행 자동 생성 확인
-- [ ] 데이터 형식 확인:
-  - [ ] A열: 이름
-  - [ ] B열: 전화번호 (010-0000-0000 형식)
-  - [ ] C열: 참여수 (1 또는 2)
-  - [ ] D열: 당첨수 (0, 1, 2)
-  - [ ] E열: 1차 결과
-  - [ ] F열: 2차 결과 (없으면 "-")
-  - [ ] G열: 당첨 상품 (없으면 "없음")
-  - [ ] H열: 참여시간 (한국 시간)
+- [ ] 백업 데이터 저장 확인
 
 ### 에러 로그 확인
 - [ ] Vercel 대시보드 → Deployments

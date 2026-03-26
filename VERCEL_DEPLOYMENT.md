@@ -4,12 +4,22 @@
 
 ## 사전 준비
 
-### 1. Google Sheets API 설정
-먼저 [GOOGLE_SHEETS_SETUP.md](./GOOGLE_SHEETS_SETUP.md)를 참고하여 Google Sheets API를 설정하고, 다음 정보를 준비하세요:
+### 1. Supabase 프로젝트 설정
+1. [Supabase](https://supabase.com)에서 계정 생성 및 프로젝트 생성
+2. 다음 테이블 생성:
+   - `prizes`: 경품 정보 테이블
+   - `participants`: 참가자 정보 테이블
+3. 프로젝트 설정에서 다음 정보 복사:
+   - ✅ Project URL
+   - ✅ Anon/Public Key
+   - ✅ Service Role Key
+
+### 2. Google Sheets API 설정 (백업용)
+[GOOGLE_SHEETS_SETUP.md](./GOOGLE_SHEETS_SETUP.md)를 참고하여 Google Sheets API를 설정하고, 다음 정보를 준비하세요:
 - ✅ Service Account JSON 키 파일
 - ✅ Google Sheets 스프레드시트 ID
 
-### 2. Git 레포지토리 생성
+### 3. Git 레포지토리 생성
 
 ```bash
 # Git 초기화 (아직 안 했다면)
@@ -69,6 +79,40 @@ npm install
 1. 프로젝트 설정에서 "Environment Variables" 섹션으로 이동
 2. 다음 환경 변수들을 추가:
 
+#### Supabase 설정
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+```
+
+**Value:** Supabase 프로젝트 URL (예: `https://xxxxx.supabase.co`)
+**Environment:** Production, Preview, Development 모두 체크
+
+```
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+
+**Value:** Supabase anon/public key
+**Environment:** Production, Preview, Development 모두 체크
+
+```
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+**Value:** Supabase service role key (관리자 권한)
+**Environment:** Production, Preview, Development 모두 체크
+
+#### 관리자 인증
+
+```
+ADMIN_PASSWORD
+```
+
+**Value:** 관리자 페이지 접속 비밀번호 (원하는 비밀번호 설정)
+**Environment:** Production, Preview, Development 모두 체크
+
+#### Google Sheets API (백업용)
+
 #### GOOGLE_SERVICE_ACCOUNT_KEY
 
 ```
@@ -108,18 +152,26 @@ GOOGLE_SHEET_ID
 
 배포된 사이트에서 다음을 테스트:
 
-- ✅ PIN 코드 입력 (1234, 5678, 9999)
+- ✅ PIN 코드 입력 (data/pin_codes.json에 있는 유효한 PIN 코드 사용)
 - ✅ 영상 시청 페이지
 - ✅ 룰렛 회전
 - ✅ 결과 팝업
-- ✅ 정보 입력 및 Google Sheets 저장
+- ✅ 정보 입력 및 Supabase DB 저장
+- ✅ Google Sheets 백업 저장
 - ✅ 전화번호 중복 체크
 - ✅ 두 번째 룰렛 참여
+- ✅ 관리자 페이지 접속 (`/admin`)
 
-### 2. Google Sheets 확인
+### 2. 데이터베이스 확인
 
+**Supabase (메인)**
+1. Supabase 대시보드 열기
+2. `participants` 테이블에서 데이터 확인
+3. `prizes` 테이블에서 경품 설정 확인
+
+**Google Sheets (백업)**
 1. Google Sheets 열기
-2. 데이터가 올바르게 저장되는지 확인
+2. 백업 데이터가 올바르게 저장되는지 확인
 3. 헤더 행이 자동 생성되었는지 확인
 
 ### 3. 로그 확인

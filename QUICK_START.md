@@ -1,8 +1,23 @@
 # 🚀 빠른 시작 가이드
 
-5분 안에 Vercel에 배포하기!
+10분 안에 Vercel에 배포하기!
 
-## 1️⃣ Google Sheets 준비 (2분)
+## 1️⃣ Supabase 설정 (3분)
+
+### 프로젝트 생성
+1. [Supabase](https://supabase.com) 계정 생성 및 로그인
+2. 새 프로젝트 생성
+3. 프로젝트 설정에서 API 키 복사:
+   - Project URL
+   - Anon key
+   - Service role key
+
+### 테이블 생성
+SQL Editor에서 다음 테이블 생성:
+- `prizes`: 경품 정보
+- `participants`: 참가자 정보
+
+## 2️⃣ Google Sheets 준비 (2분, 백업용)
 
 ### Service Account 생성
 1. [Google Cloud Console](https://console.cloud.google.com/) 접속
@@ -16,7 +31,7 @@
 3. 권한: **편집자**
 4. URL에서 ID 복사: `https://docs.google.com/spreadsheets/d/[여기]/edit`
 
-## 2️⃣ GitHub 푸시 (1분)
+## 3️⃣ GitHub 푸시 (1분)
 
 ```bash
 # 레포지토리 생성 후
@@ -27,7 +42,7 @@ git remote add origin https://github.com/your-username/your-repo.git
 git push -u origin main
 ```
 
-## 3️⃣ Vercel 배포 (2분)
+## 4️⃣ Vercel 배포 (3분)
 
 ### 프로젝트 Import
 1. [Vercel](https://vercel.com) 로그인
@@ -37,25 +52,33 @@ git push -u origin main
 
 ### 환경 변수 설정
 
-**GOOGLE_SERVICE_ACCOUNT_KEY:**
-- JSON 파일 전체 내용을 한 줄로 복사 붙여넣기
-- 모든 환경(Production, Preview, Development) 체크 ✅
+**Supabase 설정:**
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase 프로젝트 URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Anon key
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key
+- 모든 환경 체크 ✅
 
-**GOOGLE_SHEET_ID:**
-- 스프레드시트 ID 입력
+**관리자 인증:**
+- `ADMIN_PASSWORD`: 관리자 비밀번호 (원하는 비밀번호 설정)
+- 모든 환경 체크 ✅
+
+**Google Sheets (백업용):**
+- `GOOGLE_SERVICE_ACCOUNT_KEY`: JSON 파일 전체 내용을 한 줄로 복사
+- `GOOGLE_SHEET_ID`: 스프레드시트 ID
 - 모든 환경 체크 ✅
 
 ### 배포!
 "Deploy" 버튼 클릭 → 완료! 🎉
 
-## 4️⃣ 테스트
+## 5️⃣ 테스트
 
 배포 URL 접속:
-1. PIN 입력: `1234`
-2. 영상 시청 (1분 후 건너뛰기 가능)
+1. PIN 입력 (예: `P160817` - Excel 파일의 유효한 PIN 코드 사용)
+2. 영상 시청 (설정된 시간 후 건너뛰기 가능)
 3. 룰렛 돌리기
 4. 정보 입력
-5. Google Sheets 확인!
+5. Supabase DB 및 Google Sheets 백업 확인!
+6. 관리자 페이지 (`/admin`) 접속 테스트
 
 ---
 

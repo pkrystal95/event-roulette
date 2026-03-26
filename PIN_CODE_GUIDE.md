@@ -32,6 +32,13 @@
 
 ### 1. PIN 코드 파일 준비
 
+**방법 A: 관리자 페이지 사용 (권장)**
+1. `/admin/login`에서 관리자 로그인
+2. PIN 코드 관리 섹션으로 이동
+3. Excel 파일 업로드 (자동으로 JSON 변환)
+4. 업로드된 PIN 코드 목록 확인
+
+**방법 B: 수동 변환**
 1. Excel 파일 생성 (`pin_code.xlsx`)
 2. 첫 번째 행에 헤더 입력 (예: "매장 코드")
 3. PIN 코드 입력 (P160817, P036089, ...)
@@ -190,7 +197,7 @@ npm run dev
 # PIN 코드 수 확인
 node -e "
 const XLSX = require('xlsx');
-const wb = XLSX.readFile('public/assets/pin_code.xlsx');
+const wb = XLSX.readFile('data/pin_code.xlsx');
 const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
 console.log('총 PIN 코드 수:', data.length);
 console.log('샘플:', data.slice(0, 5));
@@ -225,33 +232,21 @@ console.log('샘플:', data.slice(0, 5));
 
 ## 📝 PIN 코드 추가/수정
 
+**방법 A: 관리자 페이지 사용 (권장)**
+1. `/admin` 페이지 접속
+2. PIN 코드 관리 섹션으로 이동
+3. 새 Excel 파일 업로드
+4. 자동으로 JSON 변환 및 배포
+
+**방법 B: 수동 변환**
 1. `data/pin_code.xlsx` 파일 열기
 2. 새 행에 PIN 코드 추가 (P + 6자리 숫자)
 3. 파일 저장
 4. **JSON으로 변환** (중요!)
 
 ```bash
-# Excel → JSON 변환
-node -e "
-const XLSX = require('xlsx');
-const fs = require('fs');
-
-const workbook = XLSX.readFile('data/pin_code.xlsx');
-const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-const data = XLSX.utils.sheet_to_json(worksheet);
-
-const pinCodes = data
-  .map(row => row['매장 코드'])
-  .filter(pin => pin && /^P\d{6}$/.test(String(pin).trim()))
-  .map(pin => String(pin).trim().toUpperCase());
-
-fs.writeFileSync(
-  'data/pin_codes.json',
-  JSON.stringify(pinCodes, null, 2)
-);
-
-console.log('✅', pinCodes.length, '개 PIN 코드 변환 완료');
-"
+# Excel → JSON 변환 스크립트 실행
+node scripts/convert-pins.js
 
 # Git에 커밋
 git add data/pin_codes.json
@@ -266,8 +261,10 @@ git push
 **.gitignore에 추가** (선택사항):
 ```
 # PIN 코드 파일 (운영 환경에서만)
-public/assets/pin_code.xlsx
+data/pin_code.xlsx
 ```
+
+**참고**: `data/pin_codes.json` 파일은 배포에 필요하므로 Git에 커밋해야 합니다.
 
 ### 2. 환경별 파일 관리
 
@@ -317,23 +314,16 @@ export function isPinUsed(pin: string): boolean {
 ### PIN 코드가 인식되지 않음
 
 ```bash
-# 1. Excel 파일 확인
-cat public/assets/pin_code.xlsx
+# 1. JSON 파일 확인
+cat data/pin_codes.json | head -20
 
-# 2. PIN 코드 로드 테스트
-node -e "
-const { loadPinCodes } = require('./lib/pinCodes');
-const pins = loadPinCodes();
-console.log('로드된 PIN 수:', pins.size);
-console.log('샘플:', Array.from(pins).slice(0, 5));
-"
+# 2. Excel 파일 확인
+ls -la data/pin_code.xlsx
 
-# 3. 특정 PIN 검증
-node -e "
-const { verifyPinCode } = require('./lib/pinCodes');
-console.log('P160817:', verifyPinCode('P160817'));
-console.log('P000000:', verifyPinCode('P000000'));
-"
+# 3. 특정 PIN 검증 (개발 서버 실행 후 API 테스트)
+curl -X POST http://localhost:3000/api/verify-pin \
+  -H "Content-Type: application/json" \
+  -d '{"pin":"P160817"}'
 ```
 
 ## 📚 추가 리소스

@@ -32,8 +32,16 @@ npm install
 - 자세한 내용: [PIN_CODE_GUIDE.md](./PIN_CODE_GUIDE.md)
 
 3. 환경 변수 설정
-- `.env.local` 파일 생성 (`.env.example` 참고)
-- Google Sheets API 설정 필요 → [설정 가이드](./GOOGLE_SHEETS_SETUP.md) 참조
+- `.env.local` 파일 생성
+- **Supabase** 설정 (메인 데이터베이스)
+  - `NEXT_PUBLIC_SUPABASE_URL`: Supabase 프로젝트 URL
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon key
+  - `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
+- **Google Sheets** 설정 (백업용) → [설정 가이드](./GOOGLE_SHEETS_SETUP.md)
+  - `GOOGLE_SERVICE_ACCOUNT_KEY`: Service Account JSON
+  - `GOOGLE_SHEET_ID`: Spreadsheet ID
+- **관리자 인증**
+  - `ADMIN_PASSWORD`: 관리자 페이지 비밀번호
 
 4. 개발 서버 실행
 ```bash
@@ -58,26 +66,53 @@ http://localhost:3000
 Vercel에 배포하려면 [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md) 가이드를 참조하세요.
 
 **간단 요약:**
-1. GitHub 레포지토리 생성 및 푸시
-2. [Vercel](https://vercel.com)에서 프로젝트 import
-3. 환경 변수 설정 (GOOGLE_SERVICE_ACCOUNT_KEY, GOOGLE_SHEET_ID)
-4. 배포 완료!
+1. Supabase 프로젝트 생성 및 테이블 설정
+2. GitHub 레포지토리 생성 및 푸시
+3. [Vercel](https://vercel.com)에서 프로젝트 import
+4. 환경 변수 설정:
+   - Supabase (URL, Keys)
+   - Google Sheets (Service Account, Sheet ID)
+   - 관리자 비밀번호
+5. 배포 완료!
 
 ## 파일 구조
 
 ```
 kmong/
-├── assets/
-│   ├── front.png      # 룰렛 앞판 (6개 영역)
-│   ├── back.png       # 룰렛 뒷판
-│   ├── button.png     # GO 버튼
-│   └── arrow.png      # 화살표
-├── roulette.html      # 메인 HTML
-├── roulette.css       # 스타일시트
-├── roulette.js        # 클라이언트 로직
-├── server.js          # Express 서버
-├── package.json       # 의존성 관리
-└── README.md          # 문서
+├── app/                    # Next.js App Router
+│   ├── page.tsx           # 메인 페이지
+│   ├── layout.tsx         # 레이아웃
+│   ├── admin/             # 관리자 페이지
+│   │   ├── page.tsx       # 관리자 대시보드
+│   │   ├── login/         # 관리자 로그인
+│   │   └── components/    # 관리자 컴포넌트
+│   └── api/               # API Routes
+│       ├── spin/          # 룰렛 추첨 API
+│       ├── verify-pin/    # PIN 검증 API
+│       ├── extra-chance/  # 추가 기회 API
+│       └── admin/         # 관리자 API
+├── components/            # React 컴포넌트
+│   ├── PinInputSection.tsx      # PIN 입력
+│   ├── VideoSection.tsx         # 광고 영상
+│   ├── RouletteSection.tsx      # 룰렛
+│   ├── ResultSection.tsx        # 결과 모달
+│   └── ExtraFormSection.tsx     # 정보 입력 폼
+├── lib/                   # 유틸리티 라이브러리
+│   ├── pinCodes.ts        # PIN 코드 검증
+│   ├── googleSheets.ts    # Google Sheets 연동
+│   ├── supabase.ts        # Supabase DB 연동
+│   └── adminAuth.ts       # 관리자 인증
+├── public/assets/         # 정적 파일
+│   ├── front.png          # 룰렛 앞판 (6개 영역)
+│   ├── back.png           # 룰렛 뒷판
+│   ├── button.png         # GO 버튼
+│   └── arrow.png          # 화살표
+├── data/                  # 데이터 파일
+│   ├── pin_code.xlsx      # PIN 코드 Excel 파일
+│   └── pin_codes.json     # PIN 코드 JSON (변환됨)
+├── scripts/               # 유틸리티 스크립트
+│   └── convert-pins.js    # Excel → JSON 변환
+└── package.json           # 의존성 관리
 ```
 
 ## API
@@ -97,35 +132,38 @@ kmong/
 
 - `result`: 1~6 사이의 숫자 (당첨 영역)
 
-## 상품 설정
+## 상품 및 확률 설정
 
-`roulette.js` 파일의 `prizes` 객체에서 각 영역의 상품을 수정할 수 있습니다:
+관리자 페이지(`/admin`)에서 경품과 확률을 설정할 수 있습니다:
 
-```javascript
-const prizes = {
-    1: "10% 할인",
-    2: "꽝",
-    3: "무료쿠폰",
-    4: "20% 할인",
-    5: "꽝",
-    6: "5% 할인"
-};
-```
+1. 관리자 로그인 (`/admin/login`)
+2. **경품 설정 섹션**:
+   - 각 섹터(1-6)의 경품명 수정
+   - 당첨 메시지 설정
+   - 경품 활성화/비활성화
+3. **확률 설정 섹션**:
+   - 각 경품의 가중치 조정
+   - 가중치가 높을수록 당첨 확률 증가
+   - 실시간 확률 미리보기
 
-HTML에서도 텍스트를 수정하세요:
-
-```html
-<div class="prize-text prize-1">10% 할인</div>
-<div class="prize-text prize-2">꽝</div>
-<!-- ... -->
-```
-
-## 확률 조정
-
-`server.js`에서 주석 처리된 가중치 코드를 활성화하여 각 영역의 당첨 확률을 조정할 수 있습니다.
+**데이터 저장**:
+- 경품 정보는 Supabase DB의 `prizes` 테이블에 저장
+- 참가자 정보는 Supabase DB의 `participants` 테이블에 저장
+- Google Sheets는 백업용으로 사용
 
 ## 쿠키 관리
 
-- 쿠키명: `roulette_played`
-- 유효기간: 365일
+- `event_participated`: 룰렛 참여 완료 여부 (1년)
+- `event_extra_chance_used`: 추가 기회 사용 여부 (1년)
+- `event_phone`: 참가자 전화번호 (1년)
 - 삭제하려면 브라우저 개발자도구 > Application > Cookies에서 삭제
+
+## 관리자 페이지
+
+`/admin` 경로로 접속하여 다음 기능을 사용할 수 있습니다:
+- **경품 설정**: 각 섹터의 경품명과 메시지 설정
+- **확률 설정**: 가중치 기반 당첨 확률 조정
+- **참가자 관리**: 실시간 참가자 목록 및 통계 확인
+- **광고 설정**: 광고 영상 URL, 시청 시간, 건너뛰기 시간 설정
+- **PIN 코드 관리**: Excel 파일 업로드 및 관리
+- **파일 관리**: 룰렛 이미지 업로드 및 관리
