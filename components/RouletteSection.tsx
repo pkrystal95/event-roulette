@@ -312,7 +312,7 @@ export default function RouletteSection({ onShowResults }: RouletteSectionProps)
   const isWinner = true;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-600 to-purple-800 px-4 py-12">
+    <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12" style={{ backgroundColor: '#FF7BC3' }}>
       <div className="w-full max-w-lg text-center">
         <h2 className="text-4xl font-bold text-white mb-4 mt-8">룰렛 이벤트</h2>
         <p className="text-purple-100 mb-8">

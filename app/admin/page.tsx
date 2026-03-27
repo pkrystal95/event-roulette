@@ -118,7 +118,7 @@ export default function AdminPage() {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              파일 관리
+              룰렛 설정
             </button>
             <button
               onClick={() => handleTabChange('participants')}
