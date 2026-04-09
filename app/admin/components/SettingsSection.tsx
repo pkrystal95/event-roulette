@@ -7,6 +7,9 @@ export default function SettingsSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [uploadPercent, setUploadPercent] = useState(0);
+  const [uploadPhase, setUploadPhase] = useState<'compressing' | 'sending' | 'processing' | null>(null);
   const [pinStats, setPinStats] = useState<{ count: number; samplePins: string[] } | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [pinMessage, setPinMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -92,6 +95,71 @@ export default function SettingsSection() {
     setTimeout(() => setPinMessage(null), 5000);
   };
 
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/') && !file.name.toLowerCase().endsWith('.mp4')) {
+      showMessage('error', 'MP4 영상 파일만 업로드 가능합니다.');
+      event.target.value = '';
+      return;
+    }
+
+    const fixedFile = new File([file], 'ad-video.mp4', { type: 'video/mp4' });
+    const formData = new FormData();
+    formData.append('file', fixedFile);
+
+    const isLarge = file.size > 50 * 1024 * 1024;
+
+    setVideoUploading(true);
+    setUploadPercent(0);
+    setUploadPhase(isLarge ? 'compressing' : 'sending');
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        setUploadPercent(percent);
+        if (percent === 100) setUploadPhase('processing');
+      }
+    });
+
+    xhr.addEventListener('load', async () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (data.success) {
+          const videoUrl = data.file.url;
+          setAdUrl(videoUrl);
+          await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'ad_url', value: videoUrl }),
+          });
+          showMessage('success', '영상이 업로드되어 광고 URL로 설정되었습니다.');
+        } else {
+          showMessage('error', data.message || '업로드에 실패했습니다.');
+        }
+        } catch {
+          showMessage('error', '서버 응답을 처리할 수 없습니다.');
+        } finally {
+          setVideoUploading(false);
+          setUploadPhase(null);
+          event.target.value = '';
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        showMessage('error', '업로드 중 네트워크 오류가 발생했습니다.');
+        setVideoUploading(false);
+        setUploadPhase(null);
+        event.target.value = '';
+      });
+
+      xhr.open('POST', '/api/admin/upload');
+      xhr.send(formData);
+  };
+
   const handlePinFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -146,6 +214,73 @@ export default function SettingsSection() {
         <h2 className="text-xl font-bold text-gray-900 mb-6">광고 설정</h2>
 
         <div className="space-y-4">
+        {/* 파일 직접 업로드 */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            광고 영상 파일 업로드
+          </label>
+          <label className={`block ${videoUploading ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+            <input
+              type="file"
+              accept="video/mp4,.mp4"
+              onChange={handleVideoUpload}
+              disabled={videoUploading}
+              className="hidden"
+            />
+            <div
+              className={`w-full border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                videoUploading
+                  ? 'border-gray-200 bg-gray-50'
+                  : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
+              }`}
+            >
+              {videoUploading ? (
+                <div className="text-gray-600">
+                  <svg className="w-8 h-8 mx-auto mb-3 animate-spin text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {uploadPhase === 'compressing' && (
+                    <p className="text-sm font-semibold mb-2 text-orange-600">압축 중... {uploadPercent}%</p>
+                  )}
+                  {uploadPhase === 'sending' && (
+                    <p className="text-sm font-semibold mb-2">전송 중... {uploadPercent}%</p>
+                  )}
+                  {uploadPhase === 'processing' && (
+                    <p className="text-sm font-semibold mb-2 text-purple-600">저장 중... 잠시만 기다려주세요</p>
+                  )}
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-200 ${
+                        uploadPhase === 'compressing' ? 'bg-orange-400' :
+                        uploadPhase === 'processing' ? 'bg-green-500 animate-pulse w-full' :
+                        'bg-purple-500'
+                      }`}
+                      style={uploadPhase === 'processing' ? undefined : { width: `${uploadPercent}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="text-purple-600">
+                  <svg className="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-sm font-medium">MP4 파일을 클릭하여 업로드</p>
+                  <p className="text-xs text-gray-500 mt-1">업로드 후 URL이 자동으로 설정됩니다</p>
+                </div>
+              )}
+            </div>
+          </label>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">또는 URL 직접 입력</span>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="ad-url" className="block text-sm font-medium text-gray-700 mb-2">
             광고 영상 URL

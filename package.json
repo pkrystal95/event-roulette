@@ -10,6 +10,9 @@
     "test:create-user": "node scripts/create-test-user.js"
   },
   "dependencies": {
+    "@ffmpeg/core-st": "^0.11.1",
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
     "@supabase/supabase-js": "^2.100.0",
     "googleapis": "^171.4.0",
     "js-cookie": "^3.0.5",
