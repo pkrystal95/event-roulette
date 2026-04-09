@@ -11,32 +11,28 @@ export default function VideoSection({ onComplete }: VideoSectionProps) {
   const [canSkip, setCanSkip] = useState(false);
   const [loading, setLoading] = useState(false);
   const [watchedTime, setWatchedTime] = useState(0);
-  const [adUrl, setAdUrl] = useState('https://www.w3schools.com/html/mov_bbb.mp4');
+  const [adUrl, setAdUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const maxWatchedTimeRef = useRef(0);
 
   useEffect(() => {
-    // 설정에서 광고 URL 로드
+    // 설정에서 광고 URL 로드 후 비디오 재생
     const loadAdUrl = async () => {
       try {
-        const response = await fetch('/api/settings');
+        const response = await fetch('/api/settings', { cache: 'no-store' });
         const data = await response.json();
         if (data.success && data.settings.ad_url) {
           setAdUrl(data.settings.ad_url);
+        } else {
+          setAdUrl('https://www.w3schools.com/html/mov_bbb.mp4');
         }
       } catch (error) {
         console.error('Failed to load ad URL:', error);
+        setAdUrl('https://www.w3schools.com/html/mov_bbb.mp4');
       }
     };
 
     loadAdUrl();
-
-    // 비디오 자동 재생 시도
-    if (videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.log('Autoplay failed:', err);
-      });
-    }
 
     // 60초(1분) 후 건너뛰기 버튼 활성화
     const skipTimer = setTimeout(() => {
@@ -45,6 +41,16 @@ export default function VideoSection({ onComplete }: VideoSectionProps) {
 
     return () => clearTimeout(skipTimer);
   }, []);
+
+  // adUrl이 설정된 후 비디오 로드 및 재생
+  useEffect(() => {
+    if (adUrl && videoRef.current) {
+      videoRef.current.load();
+      videoRef.current.play().catch((err) => {
+        console.log('Autoplay failed:', err);
+      });
+    }
+  }, [adUrl]);
 
   // 시간 업데이트 추적 - 시크바 조작 방지
   const handleTimeUpdate = () => {
@@ -97,21 +103,24 @@ export default function VideoSection({ onComplete }: VideoSectionProps) {
   return (
     <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
       {/* 비디오 */}
-      <video
-        ref={videoRef}
-        className="w-full h-full object-contain"
-        autoPlay
-        muted
-        playsInline
-        onEnded={handleVideoEnd}
-        onTimeUpdate={handleTimeUpdate}
-        onSeeking={handleSeeking}
-        controlsList="nodownload nofullscreen noremoteplayback"
-        disablePictureInPicture
-      >
-        <source src={adUrl} type="video/mp4" />
-        영상을 불러올 수 없습니다.
-      </video>
+      {adUrl ? (
+        <video
+          ref={videoRef}
+          className="w-full h-full object-contain"
+          muted
+          playsInline
+          onEnded={handleVideoEnd}
+          onTimeUpdate={handleTimeUpdate}
+          onSeeking={handleSeeking}
+          controlsList="nodownload nofullscreen noremoteplayback"
+          disablePictureInPicture
+        >
+          <source src={adUrl} type="video/mp4" />
+          영상을 불러올 수 없습니다.
+        </video>
+      ) : (
+        <div className="text-white text-sm">영상 로딩 중...</div>
+      )}
 
       {/* 1분 후 건너뛰기 버튼 (우측 상단) */}
       {canSkip && !videoWatched && (

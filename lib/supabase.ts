@@ -17,6 +17,10 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     autoRefreshToken: false,
     persistSession: false,
   },
+  global: {
+    fetch: (url: RequestInfo | URL, options?: RequestInit) =>
+      fetch(url, { ...options, cache: 'no-store' }),
+  },
 });
 
 // Storage 관련 유틸리티 함수

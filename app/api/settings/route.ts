@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+
 // 공개 설정 가져오기 (인증 불필요)
 export async function GET() {
   try {
