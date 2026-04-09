@@ -107,7 +107,6 @@ export default function VideoSection({ onComplete }: VideoSectionProps) {
         <video
           ref={videoRef}
           className="w-full h-full object-contain"
-          muted
           playsInline
           onEnded={handleVideoEnd}
           onTimeUpdate={handleTimeUpdate}
