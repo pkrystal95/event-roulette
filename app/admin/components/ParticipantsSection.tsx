@@ -5,10 +5,8 @@ import * as XLSX from 'xlsx';
 
 interface Participant {
   id: string;
-  name: string;
-  phone: string;
+  pin_number: string | null;
   first_result: string;
-  second_result: string | null;
   is_winner: boolean;
   created_at: string;
 }
@@ -62,7 +60,6 @@ export default function ParticipantsSection() {
 
   const handleExcelDownload = async () => {
     try {
-      // 전체 데이터 조회
       const response = await fetch('/api/admin/participants', {
         method: 'POST',
       });
@@ -73,24 +70,18 @@ export default function ParticipantsSection() {
         return;
       }
 
-      const participants = data.participants;
-
-      // 엑셀 데이터 준비
-      const excelData = participants.map((p: Participant) => ({
-        이름: p.name,
-        전화번호: p.phone,
+      const excelData = data.participants.map((p: Participant) => ({
+        'UUID': p.id,
+        'P코드': p.pin_number || '-',
         '1차 결과': p.first_result,
-        '2차 결과': p.second_result || '-',
-        당첨여부: p.is_winner ? '당첨' : '미당첨',
-        참여일시: new Date(p.created_at).toLocaleString('ko-KR'),
+        '당첨여부': p.is_winner ? '당첨' : '미당첨',
+        '참여일시': new Date(p.created_at).toLocaleString('ko-KR'),
       }));
 
-      // 워크북 생성
       const ws = XLSX.utils.json_to_sheet(excelData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, '당첨자 목록');
 
-      // 파일 다운로드
       const fileName = `당첨자목록_${new Date().toISOString().split('T')[0]}.xlsx`;
       XLSX.writeFile(wb, fileName);
     } catch (error) {
@@ -99,8 +90,8 @@ export default function ParticipantsSection() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`'${name}' 참가자를 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) {
+  const handleDelete = async (id: string) => {
+    if (!confirm('해당 참가자를 정말 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
       return;
     }
 
@@ -115,7 +106,7 @@ export default function ParticipantsSection() {
 
       if (data.success) {
         alert('삭제되었습니다.');
-        fetchParticipants(); // 목록 새로고침
+        fetchParticipants();
       } else {
         alert(data.message || '삭제에 실패했습니다.');
       }
@@ -150,7 +141,7 @@ export default function ParticipantsSection() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="이름 또는 전화번호 검색"
+            placeholder="P코드 검색"
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-purple-500"
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
@@ -219,16 +210,13 @@ export default function ParticipantsSection() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                이름
+                UUID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                전화번호
+                P코드
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 1차 결과
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                2차 결과
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                 당첨여부
@@ -244,30 +232,27 @@ export default function ParticipantsSection() {
           <tbody className="bg-white divide-y divide-gray-200">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   로딩 중...
                 </td>
               </tr>
             ) : participants.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   데이터가 없습니다.
                 </td>
               </tr>
             ) : (
               participants.map((participant) => (
                 <tr key={participant.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {participant.name}
+                  <td className="px-6 py-4 text-xs text-gray-400 font-mono">
+                    {participant.id}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {participant.phone}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    {participant.pin_number || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {participant.first_result}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {participant.second_result || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <span
@@ -285,7 +270,7 @@ export default function ParticipantsSection() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button
-                      onClick={() => handleDelete(participant.id, participant.name)}
+                      onClick={() => handleDelete(participant.id)}
                       className="text-red-600 hover:text-red-800 font-medium"
                     >
                       삭제

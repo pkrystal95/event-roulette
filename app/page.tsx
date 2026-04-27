@@ -1,32 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Step } from '@/types';
 import PinInputSection from '@/components/PinInputSection';
 import VideoSection from '@/components/VideoSection';
 import RouletteSection from '@/components/RouletteSection';
-import MyResultsSection from '@/components/MyResultsSection';
 
 export default function Home() {
-  const [step, setStep] = useState<Step>('pin');
+  const [step, setStep] = useState<'pin' | 'video' | 'roulette'>('pin');
 
-  // PIN 입력 성공
   const handlePinSuccess = () => {
     setStep('video');
   };
 
-  // 영상 시청 완료
   const handleVideoComplete = () => {
-    setStep('roulette');
-  };
-
-  // 당첨 내역 페이지로 이동
-  const handleShowResults = () => {
-    setStep('results');
-  };
-
-  // 룰렛으로 돌아가기
-  const handleBackToRoulette = () => {
     setStep('roulette');
   };
 
@@ -34,8 +20,7 @@ export default function Home() {
     <main>
       {step === 'pin' && <PinInputSection onSuccess={handlePinSuccess} />}
       {step === 'video' && <VideoSection onComplete={handleVideoComplete} />}
-      {step === 'roulette' && <RouletteSection onShowResults={handleShowResults} />}
-      {step === 'results' && <MyResultsSection onBackToRoulette={handleBackToRoulette} />}
+      {step === 'roulette' && <RouletteSection />}
     </main>
   );
 }

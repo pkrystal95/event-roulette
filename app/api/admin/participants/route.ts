@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
 
-    // 검색 필터 (이름 또는 전화번호)
+    // 검색 필터 (P코드)
     if (search) {
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+      query = query.ilike('pin_number', `%${search}%`);
     }
 
     // 경품 필터
